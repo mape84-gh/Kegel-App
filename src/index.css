@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #000000;
   --surface: #1C1C1E;
   --surface2: #2C2C2E;
@@ -36,19 +36,35 @@ html, body {
   margin: 0; padding: 0;
   background: var(--bg);
   color: var(--cream);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+@media (min-width: 520px) {
+  html, body { background: #000; }
+  @media (prefers-color-scheme: light) { html, body { background: #E4E4EA; } }
 }
 button { font-family: inherit; }
 a { color: var(--amber); }
-.num { font-weight: 600; }
+.num { font-weight: 600; font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+h1, h2, h3 { letter-spacing: -0.01em; }
 
 .frame {
-  max-width: 480px;
+  max-width: 460px;
   margin: 0 auto;
   min-height: 100vh;
   position: relative;
   padding-bottom: 92px;
+  background: var(--bg);
+}
+@media (min-width: 520px) {
+  .frame {
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    min-height: 100dvh;
+  }
 }
 
 .screen { animation: fadeIn .2s ease; }
@@ -72,17 +88,17 @@ a { color: var(--amber); }
 
 .club-header {
   position: relative;
-  padding: 28px 16px 18px 16px;
+  padding: 22px 16px 16px 16px;
   display: flex; flex-direction: column; align-items: center; text-align:center;
 }
 .club-logo-wrap {
-  width: 128px; height: 128px; border-radius: 50%; margin-bottom: 14px;
-  background: #F4F1EA; display:flex; align-items:center; justify-content:center;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.25); flex: 0 0 auto;
-  font-size: 40px; font-weight: 800; color: #0A84FF;
+  width: 92px; height: 92px; border-radius: 26px; margin-bottom: 12px;
+  background: linear-gradient(160deg, #F7F5EF, #E9E6DC); display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.28); flex: 0 0 auto;
+  font-size: 30px; font-weight: 800; letter-spacing: .5px; color: #0A84FF;
 }
-.club-title { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -.2px; }
-.club-header-btn { position: absolute; top: 20px; right: 16px; }
+.club-title { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -.02em; }
+.club-header-btn { position: absolute; top: 16px; right: 16px; }
 
 .tile-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -316,7 +332,7 @@ a { color: var(--amber); }
 
 .modal-overlay {
   position: fixed; inset:0; background: rgba(0,0,0,0.6); z-index: 70;
-  max-width: 480px; margin: 0 auto;
+  max-width: 460px; margin: 0 auto;
 }
 .modal-sheet {
   position:absolute; bottom:0; left:0; right:0; max-height: 82vh; overflow-y:auto;
@@ -349,7 +365,7 @@ a { color: var(--amber); }
 
 .confirm-overlay {
   position: fixed; inset:0; background: rgba(0,0,0,0.55); z-index: 80;
-  max-width: 480px; margin: 0 auto; display:flex; align-items:center; justify-content:center; padding: 0 40px;
+  max-width: 460px; margin: 0 auto; display:flex; align-items:center; justify-content:center; padding: 0 40px;
 }
 .confirm-card {
   background: var(--surface); border-radius: 16px; padding: 20px; width: 100%;
@@ -368,7 +384,7 @@ a { color: var(--amber); }
 
 footer.savebar {
   position: fixed; bottom: 64px; left:0; right:0;
-  max-width: 480px; margin: 0 auto;
+  max-width: 460px; margin: 0 auto;
   background: var(--blur-bg); backdrop-filter: blur(16px);
   border-top: 1px solid var(--line);
   padding: 10px 16px 12px 16px;
@@ -384,7 +400,7 @@ footer.savebar button:disabled { opacity:.5; }
 
 nav.tabbar {
   position: fixed; bottom:0; left:0; right:0;
-  max-width: 480px; margin: 0 auto;
+  max-width: 460px; margin: 0 auto;
   background: var(--blur-bg); backdrop-filter: blur(18px);
   border-top: 1px solid var(--line);
   display:flex; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)) 4px;
@@ -420,3 +436,4 @@ nav.tabbar {
 }
 .text-btn { background:none; border:none; color: var(--amber); font-size: 14px; cursor:pointer; padding: 8px 16px; }
 .danger { color: var(--red) !important; }
+
