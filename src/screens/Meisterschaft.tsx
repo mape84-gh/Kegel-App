@@ -1,11 +1,20 @@
 import { useMemo, useState } from 'react'
-import { useAllPoints, useMembers } from '../lib/api'
+import { useAllPoints, useEvenings, useMembers } from '../lib/api'
 import { initials } from '../lib/format'
 
 export default function Meisterschaft() {
   const points = useAllPoints()
   const members = useMembers()
+  const evenings = useEvenings()
   const [year, setYear] = useState(new Date().getFullYear())
+
+  const eveningsInYear = useMemo(
+    () =>
+      (evenings.data ?? []).filter(
+        (e) => e.status === 'freigegeben' && new Date(e.datum).getFullYear() === year,
+      ).length,
+    [evenings.data, year],
+  )
 
   const years = useMemo(() => {
     const s = new Set<number>([new Date().getFullYear()])
@@ -72,7 +81,12 @@ export default function Meisterschaft() {
                 <div className="rank-num">{i + 1}</div>
                 <div className="rank-avatar">{initials(p.name)}</div>
                 <div className="rank-name">{p.name}</div>
-                <div className="rank-pts">{p.pts}</div>
+                <div style={{ textAlign: 'right' }}>
+                  <div className="rank-pts">{p.pts} Pkt</div>
+                  <div className="rank-schnitt">
+                    Ø {(eveningsInYear ? p.pts / eveningsInYear : 0).toFixed(1)} / Abend
+                  </div>
+                </div>
               </div>
             ))}
           </div>

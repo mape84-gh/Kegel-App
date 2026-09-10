@@ -359,6 +359,25 @@ export function useAddMember() {
   })
 }
 
+export function useDemoData() {
+  const qc = useQueryClient()
+  const seed = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('seed_demo_data')
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries(),
+  })
+  const wipe = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('wipe_demo_data')
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries(),
+  })
+  return { seed, wipe }
+}
+
 export function useRemoveMember() {
   const qc = useQueryClient()
   return useMutation({

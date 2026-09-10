@@ -12,7 +12,7 @@ import {
 } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import { KAT_LABEL, type PenaltyKat } from '../lib/types'
-import { fmtEuro, initials } from '../lib/format'
+import { fmtEuro, fmtLongDE, initials } from '../lib/format'
 
 const KATS: PenaltyKat[] = ['pudel', 'c10', 'c50', 'c100']
 
@@ -122,20 +122,20 @@ export default function AbendErfassung() {
         <button className="backbtn" onClick={() => nav('/abende')}>
           ‹ Abende
         </button>
+        <h1 style={{ fontSize: 17, fontWeight: 700 }}>
+          {datum ? fmtLongDE(datum) : 'Neuer Abend'}
+        </h1>
         <span className={'status-chip ' + status}>
           {status === 'entwurf' ? 'Entwurf' : status === 'kontrolle' ? 'Kontrolle' : 'Freigegeben'}
         </span>
       </div>
 
-      <div className="field-row">
-        <label>Datum</label>
-        <input
-          type="date"
-          value={datum}
-          disabled={locked}
-          onChange={(e) => setDatum(e.target.value)}
-        />
-      </div>
+      {status === 'entwurf' && (
+        <div className="field-row">
+          <label>Datum</label>
+          <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+        </div>
+      )}
 
       {status === 'kontrolle' && (
         <div className="locked-banner">
@@ -146,11 +146,50 @@ export default function AbendErfassung() {
         <div className="locked-banner ok">✓ Dieser Abend ist freigegeben.</div>
       )}
 
+      <div className="list-pad">
+        <div className="card pauschale-card">
+          <div>
+            <div className="p-label">Kegelbahnkosten</div>
+            <div className="p-sub">
+              {fmtEuro(bahn)} € ÷ {present} Anwesende = {fmtEuro(present ? bahn / present : 0)} €
+              pro Person
+            </div>
+          </div>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.5"
+            disabled={locked}
+            value={bahn || ''}
+            onChange={(e) => setBahn(+e.target.value || 0)}
+          />
+        </div>
+        <div className="card pauschale-card" style={{ marginTop: 8 }}>
+          <div>
+            <div className="p-label">Getränkekosten</div>
+            <div className="p-sub">
+              {fmtEuro(getr)} € ÷ {present} Anwesende = {fmtEuro(present ? getr / present : 0)} €
+              pro Person
+            </div>
+          </div>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.5"
+            disabled={locked}
+            value={getr || ''}
+            onChange={(e) => setGetr(+e.target.value || 0)}
+          />
+        </div>
+      </div>
+
       <div className="legend">
         <span className="chip">Pudel / 10 ¢ = 0,10 €</span>
         <span className="chip">50 ¢ = 0,50 €</span>
         <span className="chip">1 € = 1,00 €</span>
-        <span className="chip">PKT = Meisterschaftspunkte (nur Anwesende)</span>
+        <span className="chip" style={{ color: 'var(--gold)', borderColor: 'var(--gold)' }}>
+          PKT = Meisterschaft (nur Anwesende)
+        </span>
       </div>
 
       <div className="list-pad">
@@ -183,7 +222,6 @@ export default function AbendErfassung() {
               <div className="entry-fields">
                 {KATS.map((k) => (
                   <div className="field" key={k}>
-                    <label>{KAT_LABEL[k]}</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -197,10 +235,10 @@ export default function AbendErfassung() {
                         }))
                       }
                     />
+                    <label>{KAT_LABEL[k]}</label>
                   </div>
                 ))}
                 <div className="field">
-                  <label>PKT</label>
                   <input
                     className="pkt"
                     type="number"
@@ -212,6 +250,7 @@ export default function AbendErfassung() {
                       patch(m.id, (x) => ({ ...x, punkte: Math.max(0, +e.target.value || 0) }))
                     }
                   />
+                  <label>PKT</label>
                 </div>
               </div>
 
@@ -278,75 +317,47 @@ export default function AbendErfassung() {
           )
         })}
 
-        <div className="card pauschale-card">
-          <div>
-            <div className="p-label">Kegelbahnkosten</div>
-            <div className="p-sub">gesamt · ÷ {present} Anwesende</div>
-          </div>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.5"
-            disabled={locked}
-            value={bahn || ''}
-            onChange={(e) => setBahn(+e.target.value || 0)}
-          />
-        </div>
-        <div className="card pauschale-card">
-          <div>
-            <div className="p-label">Getränkekosten</div>
-            <div className="p-sub">gesamt · ÷ {present} Anwesende</div>
-          </div>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.5"
-            disabled={locked}
-            value={getr || ''}
-            onChange={(e) => setGetr(+e.target.value || 0)}
-          />
-        </div>
-
-        {status === 'kontrolle' && (
-          <div className="toggle-row">
-            <button
-              className="chip"
-              onClick={() => setStatus.mutate('entwurf')}
-            >
-              ‹ Zurück zum Bearbeiten
-            </button>
-            <button className="chip active" onClick={() => setConfirmRelease(true)}>
-              Freigeben ›
-            </button>
-          </div>
-        )}
       </div>
 
-      {status === 'entwurf' && (
+      {status !== 'freigegeben' && (
         <footer className="savebar">
           <div className="total">
-            <div className="lbl">Summe Abend</div>
-            <div className="val">{fmtEuro(total)} €</div>
+            <div className="lbl">
+              {status === 'entwurf' ? 'Summe Abend' : 'Summe Abend (Kontrolle)'}
+            </div>
+            <div className="val num">{fmtEuro(total)} €</div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              disabled={save.isPending}
-              onClick={() => doSave()}
-              style={{ background: 'var(--surface2)', color: 'var(--amber)' }}
-            >
-              Speichern
-            </button>
-            <button
-              disabled={save.isPending}
-              onClick={async () => {
-                await doSave(true)
-                await setStatus.mutateAsync('kontrolle')
-                toast('Zur Kontrolle')
-              }}
-            >
-              Zur Kontrolle ›
-            </button>
-          </div>
+          {status === 'entwurf' ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                disabled={save.isPending}
+                onClick={() => doSave()}
+                style={{ background: 'var(--surface2)', color: 'var(--amber)' }}
+              >
+                Speichern
+              </button>
+              <button
+                disabled={save.isPending}
+                onClick={async () => {
+                  await doSave(true)
+                  await setStatus.mutateAsync('kontrolle')
+                  toast('Zur Kontrolle')
+                }}
+              >
+                Zur Kontrolle
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setStatus.mutate('entwurf')}
+                style={{ background: 'var(--surface2)', color: 'var(--amber)' }}
+              >
+                Bearbeiten
+              </button>
+              <button onClick={() => setConfirmRelease(true)}>Freigeben ✓</button>
+            </div>
+          )}
         </footer>
       )}
 

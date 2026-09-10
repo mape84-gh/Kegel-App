@@ -80,11 +80,21 @@ export default function Statistik() {
     return toList(acc, 'x')
   }, [attendance.data, range])
 
+  const abendeInRange = useMemo(
+    () =>
+      (attendance.data ?? []).reduce((set, a) => {
+        if (a.club_evenings?.status === 'freigegeben' && inRange(a.club_evenings?.datum))
+          set.add(a.evening_id)
+        return set
+      }, new Set<string>()).size,
+    [attendance.data, range],
+  )
+
   const blocks: { title: string; data: ReturnType<typeof toList> }[] = [
-    { title: 'Meiste Strafen', data: strafen },
-    { title: 'Meiste Pudel', data: pudel },
-    { title: 'Meiste Anwesenheiten', data: anwesend },
-    { title: 'Meiste Fehlzeiten', data: fehl },
+    { title: '💸 Meiste Strafen', data: strafen },
+    { title: '🎳 Meiste Pudel', data: pudel },
+    { title: '✅ Meiste Anwesenheiten', data: anwesend },
+    { title: '❌ Meiste Fehlzeiten', data: fehl },
   ]
 
   return (
@@ -110,10 +120,15 @@ export default function Statistik() {
       {period === 'custom' && (
         <div className="period-custom">
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          <span style={{ color: 'var(--muted)' }}>–</span>
+          <span style={{ color: 'var(--muted)' }}>bis</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
       )}
+
+      <div className="center-note" style={{ padding: '0 16px 10px' }}>
+        {range.from.split('-').reverse().join('.')} – {range.to.split('-').reverse().join('.')} ·{' '}
+        {abendeInRange} Kegelabende im Zeitraum
+      </div>
 
       {blocks.map((b) => (
         <div className="stat-block" key={b.title}>

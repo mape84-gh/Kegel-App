@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import {
   rueckstandByMember,
+  useAllAttendance,
   useAllPoints,
   useEvenings,
   useMembers,
@@ -13,29 +14,33 @@ import { daysUntil, fmtEuro, fmtLongDE, initials, nextBirthday } from '../lib/fo
 
 export default function Home() {
   const nav = useNavigate()
-  const { member } = useAuth()
+  const { member, isStaff } = useAuth()
   const evenings = useEvenings()
   const members = useMembers()
   const verlauf = useVerlauf()
   const points = useAllPoints()
+  const attendance = useAllAttendance()
   const settings = useSettings()
   const [payOpen, setPayOpen] = useState(false)
 
   const year = new Date().getFullYear()
+  const today = new Date().toISOString().slice(0, 10)
 
-  const nextEvening = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    return (evenings.data ?? [])
-      .filter((e) => e.datum >= today)
-      .sort((a, b) => a.datum.localeCompare(b.datum))[0]
-  }, [evenings.data])
+  const nextEvening = useMemo(
+    () =>
+      (evenings.data ?? [])
+        .filter((e) => e.datum >= today)
+        .sort((a, b) => a.datum.localeCompare(b.datum))[0],
+    [evenings.data, today],
+  )
 
-  const kasse = useMemo(() => {
-    // Näherung: Summe aller eingegangenen Zahlungen
-    return (verlauf.data ?? [])
-      .filter((v) => v.typ === 'zahlung')
-      .reduce((s, v) => s + -Number(v.betrag), 0)
-  }, [verlauf.data])
+  const letzteAbende = useMemo(
+    () =>
+      (evenings.data ?? [])
+        .filter((e) => e.status === 'freigegeben')
+        .slice(0, 2),
+    [evenings.data],
+  )
 
   const meinRueck = useMemo(() => {
     if (!member) return 0
@@ -58,6 +63,25 @@ export default function Home() {
       .slice(0, 3)
   }, [points.data, members.data, year])
 
+  const einnahmen = useMemo(() => {
+    const acc: Record<string, number> = {}
+    for (const v of verlauf.data ?? []) {
+      if (!v.evening_id) continue
+      if (v.typ === 'strafe' || v.typ === 'sonstige' || v.typ === 'getraenke') {
+        acc[v.evening_id] = (acc[v.evening_id] ?? 0) + Number(v.betrag)
+      }
+    }
+    return acc
+  }, [verlauf.data])
+
+  const teilnehmer = useMemo(() => {
+    const acc: Record<string, number> = {}
+    for (const a of attendance.data ?? []) {
+      if (a.anwesend) acc[a.evening_id] = (acc[a.evening_id] ?? 0) + 1
+    }
+    return acc
+  }, [attendance.data])
+
   const handle = settings.data?.paypalme_handle
 
   return (
@@ -77,71 +101,96 @@ export default function Home() {
         <h1 className="club-title">Ratinger Skatschützen</h1>
       </div>
 
-      <div className="hero">
-        <div className="hero-label">Nächster Kegelabend</div>
-        {nextEvening ? (
-          <div className="hero-row">
-            <div>
-              <div className="hero-date">{fmtLongDE(nextEvening.datum)}</div>
-              {nextEvening.ort && <div className="hero-sub">{nextEvening.ort}</div>}
-            </div>
-            <div className="flip-number">
-              {(() => {
-                const d = daysUntil(nextEvening.datum)
-                return d === 0 ? 'heute' : `${d} T`
-              })()}
-            </div>
-          </div>
-        ) : (
-          <div className="hero-sub">Noch kein Termin geplant</div>
-        )}
-      </div>
-
       <div className="tile-grid">
-        <div className="tile">
-          <div className="value green">{fmtEuro(kasse)} €</div>
-          <div className="label">Kassenbestand</div>
-        </div>
-        <div
-          className="tile"
-          onClick={() => setPayOpen(true)}
-          style={{ cursor: 'pointer' }}
-        >
-          <div className={'value ' + (meinRueck > 0 ? 'red' : 'green')}>
+        <div className="tile" onClick={() => setPayOpen(true)} style={{ cursor: 'pointer' }}>
+          <div className={'value num ' + (meinRueck > 0.005 ? 'red' : 'green')}>
             {fmtEuro(meinRueck)} €
           </div>
           <div className="label">Mein Rückstand</div>
+        </div>
+        <div className="tile">
+          <div className="value num">
+            {nextEvening
+              ? new Date(nextEvening.datum + 'T00:00:00').toLocaleDateString('de-DE', {
+                  day: '2-digit',
+                  month: 'short',
+                })
+              : '–'}
+          </div>
+          <div className="label">
+            {nextEvening
+              ? daysUntil(nextEvening.datum) === 0
+                ? 'heute'
+                : `in ${daysUntil(nextEvening.datum)} Tagen`
+              : 'kein Termin'}
+          </div>
         </div>
         <div className="tile">
           <div className="value">{bday ? bday.member.name : '–'}</div>
           <div className="label">
             {bday
               ? bday.date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
-              : 'Nächster Geburtstag'}
+              : 'Geburtstag'}
           </div>
         </div>
-        <div
-          className="tile"
-          onClick={() => nav('/meisterschaft')}
-          style={{ cursor: 'pointer' }}
-        >
-          <div className="value amber">{year}</div>
-          <div className="label">Meisterschaft ansehen</div>
-        </div>
+        {isStaff ? (
+          <div
+            className="tile"
+            onClick={() => nav('/abende')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="value amber">＋</div>
+            <div className="label">Clubabend starten</div>
+          </div>
+        ) : (
+          <div className="tile" onClick={() => nav('/meisterschaft')} style={{ cursor: 'pointer' }}>
+            <div className="value amber num">{year}</div>
+            <div className="label">Meisterschaft</div>
+          </div>
+        )}
       </div>
 
       <div className="section-title">
-        <h2>Meisterschaft Top 3</h2>
-        <a onClick={() => nav('/meisterschaft')}>Alle</a>
+        <h2>Meisterschaft · Top 3</h2>
+        <a onClick={() => nav('/meisterschaft')}>Alle ansehen</a>
       </div>
       <div className="mini-podium">
         {top3.length === 0 && <div className="center-note">Noch keine Punkte {year}</div>}
         {top3.map((m, i) => (
           <div className="mp-card" key={m.id}>
-            <div className="mp-rank">{i + 1}.</div>
+            <div className="mp-rank">{['🥇', '🥈', '🥉'][i]}</div>
             <div className="mp-avatar">{initials(m.name)}</div>
             <div className="mp-name">{m.name}</div>
-            <div className="mp-pts">{m.pts}</div>
+            <div className="mp-pts">{m.pts} Pkt</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-title">
+        <h2>Letzte Kegelabende</h2>
+        <a onClick={() => nav('/abende')}>Alle ansehen</a>
+      </div>
+      <div className="list-pad">
+        {letzteAbende.length === 0 && (
+          <div className="center-note">Noch keine freigegebenen Abende</div>
+        )}
+        {letzteAbende.map((e) => (
+          <div
+            key={e.id}
+            className="card abend-card"
+            onClick={() => nav('/abende')}
+          >
+            <div className="abend-left">
+              <div className="d1">
+                {fmtLongDE(e.datum)}
+                <span className="status-dot ok" />
+              </div>
+              <div className="d2">{teilnehmer[e.id] ?? '–'} Teilnehmer</div>
+            </div>
+            <div className="abend-right">
+              <div className="amt num">{fmtEuro(einnahmen[e.id] ?? 0)} €</div>
+              <div className="d2">Einnahmen</div>
+            </div>
           </div>
         ))}
       </div>
@@ -149,15 +198,15 @@ export default function Home() {
       {payOpen && (
         <div className="confirm-overlay" onClick={() => setPayOpen(false)}>
           <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h3>Rückstand begleichen</h3>
+            <h3>Rückstand</h3>
             <p>
               {meinRueck > 0
                 ? `Dein aktueller Rückstand beträgt ${fmtEuro(meinRueck)} €.`
-                : 'Du hast aktuell keinen Rückstand.'}
+                : 'Du hast aktuell keinen Rückstand. Möchtest du in Vorleistung gehen?'}
               {!handle && ' Es ist noch kein PayPalMe-Handle hinterlegt.'}
             </p>
             <div className="confirm-buttons">
-              <button onClick={() => setPayOpen(false)}>Schließen</button>
+              <button onClick={() => setPayOpen(false)}>Abbrechen</button>
               <button
                 disabled={!handle}
                 onClick={() => {

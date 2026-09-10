@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useToast } from '../components/Toast'
 import {
   useAddMember,
+  useDemoData,
   useMembers,
   useRemoveMember,
   useSettings,
@@ -20,6 +21,7 @@ export default function Einstellungen() {
   const updateSettings = useUpdateSettings()
   const addMember = useAddMember()
   const removeMember = useRemoveMember()
+  const demo = useDemoData()
 
   const [handle, setHandle] = useState('')
   const [newName, setNewName] = useState('')
@@ -117,6 +119,45 @@ export default function Einstellungen() {
           >
             + Mitglied anlegen
           </button>
+        </>
+      )}
+
+      {isAdmin && (
+        <>
+          <div className="section-title">
+            <h2>Demo-Daten</h2>
+          </div>
+          <div className="list-pad">
+            <div className="card">
+              <div className="p-sub" style={{ marginBottom: 10 }}>
+                Füllt alle Screens mit sechs freigegebenen Beispiel-Abenden (Saison
+                2025/26), Beiträgen und Zahlungen – zum Ausprobieren. „Leeren" entfernt
+                alle Abende, Verläufe und Beiträge, die Mitgliederliste bleibt.
+              </div>
+              <div className="mgb-row">
+                <button
+                  disabled={demo.seed.isPending || demo.wipe.isPending}
+                  onClick={async () => {
+                    await demo.seed.mutateAsync()
+                    toast('Demo-Daten geladen')
+                  }}
+                >
+                  {demo.seed.isPending ? 'Lädt…' : 'Demo-Daten laden'}
+                </button>
+                <button
+                  className="danger"
+                  disabled={demo.seed.isPending || demo.wipe.isPending}
+                  onClick={async () => {
+                    if (!confirm('Wirklich alle Abende & Verläufe löschen?')) return
+                    await demo.wipe.mutateAsync()
+                    toast('Alles geleert')
+                  }}
+                >
+                  {demo.wipe.isPending ? 'Leert…' : 'Alles leeren'}
+                </button>
+              </div>
+            </div>
+          </div>
         </>
       )}
 

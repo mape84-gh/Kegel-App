@@ -8,7 +8,7 @@ import {
   useMembers,
   useVerlauf,
 } from '../lib/api'
-import { fmtEuro } from '../lib/format'
+import { fmtEuro, initials } from '../lib/format'
 
 export default function Finanzen() {
   const { isStaff } = useAuth()
@@ -33,7 +33,6 @@ export default function Finanzen() {
   )
 
   const offenGesamt = rows.reduce((s, r) => s + Math.max(0, r.betrag), 0)
-  const schuldner = rows.filter((r) => r.betrag > 0.005).length
   const kasse = (verlauf.data ?? [])
     .filter((v) => v.typ === 'zahlung')
     .reduce((s, v) => s + -Number(v.betrag), 0)
@@ -50,16 +49,16 @@ export default function Finanzen() {
       </div>
 
       <div className="fin-hero">
-        <div className="big num">{fmtEuro(kasse)} €</div>
-        <div className="lbl">Eingegangene Zahlungen gesamt</div>
+        <div className="big num">{fmtEuro(kasse + offenGesamt)} €</div>
+        <div className="lbl">Gesamtbetrag</div>
         <div className="fin-split">
           <div>
-            <div className="num" style={{ color: 'var(--red)' }}>{fmtEuro(offenGesamt)} €</div>
-            <div className="lbl2">offen gesamt</div>
+            <div className="num" style={{ color: 'var(--green)' }}>{fmtEuro(kasse)} €</div>
+            <div className="lbl2">Kassenbetrag</div>
           </div>
           <div>
-            <div className="num">{schuldner}</div>
-            <div className="lbl2">mit Rückstand</div>
+            <div className="num" style={{ color: 'var(--red)' }}>{fmtEuro(offenGesamt)} €</div>
+            <div className="lbl2">Rückstände</div>
           </div>
         </div>
       </div>
@@ -95,8 +94,9 @@ export default function Finanzen() {
       <div>
         {rows.map((r) => (
           <div className="rueck-row" key={r.id} onClick={() => { setOpenId(r.id); setPayAmount((r.betrag > 0 ? r.betrag.toFixed(2) : '')) }}>
+            <div className="rank-avatar">{initials(r.name)}</div>
             <div className="rueck-name">{r.name}</div>
-            <div className={'rueck-val ' + (r.betrag > 0.005 ? 'pos' : 'zero')}>
+            <div className={'rueck-val num ' + (r.betrag > 0.005 ? 'pos' : 'zero')}>
               {fmtEuro(r.betrag)} €
             </div>
           </div>
