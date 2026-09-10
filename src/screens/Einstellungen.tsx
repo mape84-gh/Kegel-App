@@ -24,11 +24,15 @@ export default function Einstellungen() {
   const demo = useDemoData()
 
   const [handle, setHandle] = useState('')
+  const [rhythmus, setRhythmus] = useState('4')
   const [newName, setNewName] = useState('')
   const [newBday, setNewBday] = useState('')
 
   useEffect(() => {
-    if (settings.data) setHandle(settings.data.paypalme_handle ?? '')
+    if (settings.data) {
+      setHandle(settings.data.paypalme_handle ?? '')
+      setRhythmus(String(settings.data.termin_rhythmus_wochen ?? 4))
+    }
   }, [settings.data])
 
   return (
@@ -55,15 +59,28 @@ export default function Einstellungen() {
               onChange={(e) => setHandle(e.target.value)}
             />
           </div>
+          <div className="field-row">
+            <label>Termin-Rhythmus (Wochen)</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={rhythmus}
+              onChange={(e) => setRhythmus(e.target.value)}
+            />
+          </div>
           <button
             className="cta"
             disabled={updateSettings.isPending}
             onClick={async () => {
-              await updateSettings.mutateAsync({ paypalme_handle: handle.trim() || null })
+              await updateSettings.mutateAsync({
+                paypalme_handle: handle.trim() || null,
+                termin_rhythmus_wochen: Math.max(1, +rhythmus || 4),
+              })
               toast('Gespeichert')
             }}
           >
-            Handle speichern
+            Einstellungen speichern
           </button>
 
           <div className="section-title">

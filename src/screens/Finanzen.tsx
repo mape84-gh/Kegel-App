@@ -9,6 +9,7 @@ import {
   useVerlauf,
 } from '../lib/api'
 import { fmtEuro, initials } from '../lib/format'
+import { copyToClipboard, shareViaWhatsApp } from '../lib/share'
 
 export default function Finanzen() {
   const { isStaff } = useAuth()
@@ -36,6 +37,24 @@ export default function Finanzen() {
   const kasse = (verlauf.data ?? [])
     .filter((v) => v.typ === 'zahlung')
     .reduce((s, v) => s + -Number(v.betrag), 0)
+
+  function buildWhatsAppText() {
+    const heute = new Date().toLocaleDateString('de-DE')
+    const lines = [
+      '*Zahlungsstand – Ratinger Skatschützen*',
+      `Stand: ${heute}`,
+      '',
+      ...rows.map((r) =>
+        r.betrag > 0.005
+          ? `❌ ${r.name}: ${fmtEuro(r.betrag)} €`
+          : `✅ ${r.name}: bezahlt`,
+      ),
+      '',
+      `Offen gesamt: ${fmtEuro(offenGesamt)} €`,
+      `Kassenbetrag: ${fmtEuro(kasse)} €`,
+    ]
+    return lines.join('\n')
+  }
 
   const openMember = members.data?.find((m) => m.id === openId)
   const openVerlauf = (verlauf.data ?? [])
@@ -90,6 +109,16 @@ export default function Finanzen() {
 
       <div className="section-title">
         <h2>Rückstände</h2>
+        <a
+          onClick={async () => {
+            const text = buildWhatsAppText()
+            const copied = await copyToClipboard(text)
+            shareViaWhatsApp(text)
+            toast(copied ? 'Text kopiert & WhatsApp geöffnet' : 'WhatsApp geöffnet')
+          }}
+        >
+          WhatsApp-Export
+        </a>
       </div>
       <div>
         {rows.map((r) => (
