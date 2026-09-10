@@ -5,9 +5,14 @@ Strafen, Finanzen und Meisterschaft.
 
 ## Stack
 
+- **Live:** https://kegel-app.netlify.app (Auto-Deploy bei Push auf `main`)
 - **Frontend:** React + Vite + TypeScript, gehostet auf Netlify
 - **Backend:** Supabase (Postgres, Auth, Row Level Security)
 - Projekt-Ref: `tqpzxtngypqjbaejsfjp` · Region `eu-central-1`
+
+Netlify-Env-Variablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+Nach dem ersten Deploy in Supabase → Authentication → URL Configuration die
+Netlify-URL als *Site URL* und *Redirect URL* eintragen.
 
 ## Lokale Entwicklung
 
