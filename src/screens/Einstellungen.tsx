@@ -49,6 +49,17 @@ export default function Einstellungen() {
         <input value={`${member?.name ?? ''} · ${role ?? ''}`} disabled />
       </div>
 
+      <div className="list-pad">
+        <button
+          className="card abend-card"
+          style={{ width: '100%', cursor: 'pointer' }}
+          onClick={() => nav('/strafen')}
+        >
+          <span className="d1">Strafenkatalog</span>
+          <span className="abend-right amt">ansehen ›</span>
+        </button>
+      </div>
+
       {isAdmin && (
         <>
           <div className="field-row">

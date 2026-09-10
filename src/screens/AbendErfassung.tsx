@@ -190,6 +190,13 @@ export default function AbendErfassung() {
         <span className="chip" style={{ color: 'var(--gold)', borderColor: 'var(--gold)' }}>
           PKT = Meisterschaft (nur Anwesende)
         </span>
+        <span
+          className="chip"
+          style={{ color: 'var(--amber)', borderColor: 'var(--amber)', cursor: 'pointer' }}
+          onClick={() => nav('/strafen')}
+        >
+          → Ganzer Strafenkatalog
+        </span>
       </div>
 
       <div className="list-pad">

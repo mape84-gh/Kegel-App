@@ -12,6 +12,7 @@ import Meisterschaft from './screens/Meisterschaft'
 import Statistik from './screens/Statistik'
 import Finanzen from './screens/Finanzen'
 import Einstellungen from './screens/Einstellungen'
+import Strafen from './screens/Strafen'
 
 function StaffOnly({ children }: { children: ReactNode }) {
   const { isStaff } = useAuth()
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/statistik" element={<Statistik />} />
             <Route path="/finanzen" element={<Finanzen />} />
             <Route path="/einstellungen" element={<Einstellungen />} />
+            <Route path="/strafen" element={<Strafen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
