@@ -5,7 +5,7 @@ Strafen, Finanzen und Meisterschaft.
 
 ## Stack
 
-- **Live:** https://kegel-app.netlify.app (Auto-Deploy bei Push auf `main`)
+- **Live:** https://skatschuetzen.netlify.app (Auto-Deploy bei Push auf `main`)
 - **Frontend:** React + Vite + TypeScript, gehostet auf Netlify
 - **Backend:** Supabase (Postgres, Auth, Row Level Security)
 - Projekt-Ref: `tqpzxtngypqjbaejsfjp` · Region `eu-central-1`
