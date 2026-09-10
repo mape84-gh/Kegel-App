@@ -11,7 +11,7 @@ export default function Meisterschaft() {
   const eveningsInYear = useMemo(
     () =>
       (evenings.data ?? []).filter(
-        (e) => e.status === 'freigegeben' && new Date(e.datum).getFullYear() === year,
+        (e) => e.status === 'freigegeben' && Number(e.datum.slice(0, 4)) === year,
       ).length,
     [evenings.data, year],
   )
@@ -19,7 +19,7 @@ export default function Meisterschaft() {
   const years = useMemo(() => {
     const s = new Set<number>([new Date().getFullYear()])
     for (const p of points.data ?? []) {
-      if (p.club_evenings?.datum) s.add(new Date(p.club_evenings.datum).getFullYear())
+      if (p.club_evenings?.datum) s.add(Number(p.club_evenings.datum.slice(0, 4)))
     }
     return [...s].sort((a, b) => b - a)
   }, [points.data])

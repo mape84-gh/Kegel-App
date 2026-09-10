@@ -53,7 +53,7 @@ export default function Home() {
     const acc: Record<string, number> = {}
     for (const p of points.data ?? []) {
       const d = p.club_evenings?.datum
-      if (!d || new Date(d).getFullYear() !== year) continue
+      if (!d || Number(d.slice(0, 4)) !== year) continue
       acc[p.member_id] = (acc[p.member_id] ?? 0) + p.punkte
     }
     const byId = new Map((members.data ?? []).map((m) => [m.id, m.name]))

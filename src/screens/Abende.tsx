@@ -20,15 +20,16 @@ export default function Abende() {
   const [year, setYear] = useState<number | 'alle'>(new Date().getFullYear())
 
   const years = useMemo(() => {
-    const s = new Set<number>()
-    for (const e of evenings.data ?? []) s.add(new Date(e.datum).getFullYear())
+    const now = new Date().getFullYear()
+    const s = new Set<number>([now, now - 1])
+    for (const e of evenings.data ?? []) s.add(Number(e.datum.slice(0, 4)))
     return [...s].sort((a, b) => b - a)
   }, [evenings.data])
 
   const list = useMemo(() => {
     const all = evenings.data ?? []
     if (year === 'alle') return all
-    return all.filter((e) => new Date(e.datum).getFullYear() === year)
+    return all.filter((e) => Number(e.datum.slice(0, 4)) === year)
   }, [evenings.data, year])
 
   const teilnehmer = useMemo(() => {
