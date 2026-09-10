@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import {
   useAllAttendance,
-  useAllPoints,
+  useAllPenalties,
   useCreateEvening,
   useEvenings,
   useMembers,
   useSettings,
   useVerlauf,
 } from '../lib/api'
-import { fmtEuro, fmtLongDE, initials } from '../lib/format'
-import { drawEveningPodium } from '../lib/canvasCards'
+import { PREISE, type PenaltyKat } from '../lib/types'
+import { fmtEuro, fmtLongDE } from '../lib/format'
+import { drawEveningHighlights, type ReviewRow } from '../lib/canvasCards'
 import { shareCanvas } from '../lib/share'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -32,7 +33,7 @@ export default function Abende() {
   const evenings = useEvenings()
   const attendance = useAllAttendance()
   const verlauf = useVerlauf()
-  const points = useAllPoints()
+  const penalties = useAllPenalties()
   const members = useMembers()
   const settings = useSettings()
   const create = useCreateEvening()
@@ -94,15 +95,42 @@ export default function Abende() {
   }
 
   const podiumEvening = (evenings.data ?? []).find((e) => e.id === podiumFor)
-  const podiumTop3 = useMemo(() => {
+
+  // "Abend-Highlights": most pudel / most penalties / fewest penalties (present only)
+  const highlights = useMemo<ReviewRow[]>(() => {
     if (!podiumFor) return []
     const byId = new Map((members.data ?? []).map((m) => [m.id, m.name]))
-    return (points.data ?? [])
-      .filter((p) => p.evening_id === podiumFor)
-      .map((p) => ({ name: byId.get(p.member_id) ?? '?', value: p.punkte }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 3)
-  }, [podiumFor, points.data, members.data])
+    const present = new Set(
+      (attendance.data ?? [])
+        .filter((a) => a.evening_id === podiumFor && a.anwesend)
+        .map((a) => a.member_id),
+    )
+    const pudel: Record<string, number> = {}
+    const strafe: Record<string, number> = {}
+    for (const id of present) {
+      pudel[id] = 0
+      strafe[id] = 0
+    }
+    for (const p of penalties.data ?? []) {
+      if (p.evening_id !== podiumFor || !present.has(p.member_id)) continue
+      strafe[p.member_id] += p.anzahl * PREISE[p.kategorie as PenaltyKat]
+      if (p.kategorie === 'pudel') pudel[p.member_id] += p.anzahl
+    }
+    const ids = [...present]
+    if (!ids.length) return []
+    const maxBy = (acc: Record<string, number>) =>
+      ids.reduce((best, id) => (acc[id] > acc[best] ? id : best), ids[0])
+    const minBy = (acc: Record<string, number>) =>
+      ids.reduce((best, id) => (acc[id] < acc[best] ? id : best), ids[0])
+    const pk = maxBy(pudel)
+    const ms = maxBy(strafe)
+    const ws = minBy(strafe)
+    return [
+      { label: 'Meiste Pudel', name: byId.get(pk) ?? '?', value: `${pudel[pk]} Pudel` },
+      { label: 'Meiste Strafen', name: byId.get(ms) ?? '?', value: `${fmtEuro(strafe[ms])} €` },
+      { label: 'Wenigste Strafen', name: byId.get(ws) ?? '?', value: `${fmtEuro(strafe[ws])} €` },
+    ]
+  }, [podiumFor, penalties.data, attendance.data, members.data])
 
   return (
     <>
@@ -220,38 +248,33 @@ export default function Abende() {
                 Fertig
               </button>
             </div>
-            <div className="modal-section-label">
-              Podium des Abends · nach Meisterschaftspunkten
-            </div>
-            {podiumTop3.length === 0 ? (
-              <div className="verlauf-empty">Für diesen Abend wurden keine Punkte erfasst</div>
+            <div className="modal-section-label">Abend-Highlights</div>
+            {highlights.length === 0 ? (
+              <div className="verlauf-empty">Für diesen Abend liegen keine Werte vor</div>
             ) : (
-              <div className="podium">
-                {[podiumTop3[1], podiumTop3[0], podiumTop3[2]].map((p, i) => (
-                  <div className={'p-slot ' + ['silver', 'gold', 'bronze'][i]} key={i}>
-                    <div className="p-avatar">{p ? initials(p.name) : '—'}</div>
-                    <div className="p-name">{p?.name ?? '—'}</div>
-                    <div className="p-bar">
-                      <div className="flip-number">{p ? p.value : ''}</div>
-                      <div style={{ fontSize: 10, color: 'var(--muted)' }}>{p ? 'Pkt' : ''}</div>
+              highlights.map((h) => (
+                <div className="verlauf-row" key={h.label}>
+                  <div className="verlauf-left">
+                    <div className="vl-date">{h.label}</div>
+                    <div className="vl-label" style={{ fontSize: 16, fontWeight: 600 }}>
+                      {h.name}
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="verlauf-amt num" style={{ color: 'var(--amber)', fontSize: 16 }}>
+                    {h.value}
+                  </div>
+                </div>
+              ))
             )}
             <div className="modal-pay">
               <button
                 style={{ flex: 1 }}
-                disabled={sharing || podiumTop3.length === 0}
+                disabled={sharing || highlights.length === 0}
                 onClick={async () => {
                   setSharing(true)
                   try {
-                    const canvas = drawEveningPodium(fmtLongDE(podiumEvening.datum), podiumTop3)
-                    await shareCanvas(
-                      canvas,
-                      `podium-${podiumEvening.datum}.png`,
-                      'Abend-Podium',
-                    )
+                    const canvas = drawEveningHighlights(fmtLongDE(podiumEvening.datum), highlights)
+                    await shareCanvas(canvas, `abend-${podiumEvening.datum}.png`, 'Abend-Highlights')
                   } finally {
                     setSharing(false)
                   }

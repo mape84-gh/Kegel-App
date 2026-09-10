@@ -7,9 +7,6 @@ const BG = '#0B0B0F'
 const CARD = '#1C1C1E'
 const LINE = '#38383A'
 const BLUE = '#0A84FF'
-const GOLD = '#E8B93B'
-const SILVER = '#C7C2B8'
-const BRONZE = '#C08A5B'
 const TEXT = '#FFFFFF'
 const MUTED = '#8E8E93'
 
@@ -68,105 +65,57 @@ function footer(ctx: CanvasRenderingContext2D) {
   ctx.fillText('Ratinger Skatschützen', W / 2, H - 48)
 }
 
-export interface PodiumPerson {
-  name: string
-  value: number
-}
-
-/** Evening podium: places 1-2-3 with names + points for that evening. */
-export function drawEveningPodium(
-  dateLabel: string,
-  top3: PodiumPerson[],
-  criterion = 'nach Meisterschaftspunkten des Abends',
-  valueSuffix = ' Pkt',
-): HTMLCanvasElement {
-  const { c, ctx } = newCanvas()
-  header(ctx, 'Abend-Podium', `${dateLabel}  ·  ${criterion}`)
-
-  const order = [top3[1], top3[0], top3[2]] // silver, gold, bronze
-  const colors = [SILVER, GOLD, BRONZE]
-  const heights = [300, 400, 230]
-  const slotW = 260
-  const gap = 40
-  const totalW = slotW * 3 + gap * 2
-  const startX = (W - totalW) / 2
-  const baseY = 900
-
-  order.forEach((p, i) => {
-    const x = startX + i * (slotW + gap)
-    const barH = heights[i]
-
-    ctx.fillStyle = CARD
-    roundRect(ctx, x, baseY - barH, slotW, barH, 20)
-    ctx.fill()
-    ctx.strokeStyle = colors[i]
-    ctx.lineWidth = 3
-    roundRect(ctx, x, baseY - barH, slotW, barH, 20)
-    ctx.stroke()
-
-    ctx.fillStyle = colors[i]
-    ctx.font = '800 64px Inter, system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(String([2, 1, 3][i]), x + slotW / 2, baseY - barH + 84)
-
-    if (p) {
-      ctx.fillStyle = TEXT
-      ctx.font = '700 34px Inter, system-ui, sans-serif'
-      ctx.fillText(clip(ctx, p.name, slotW - 24), x + slotW / 2, baseY - barH + 150)
-      ctx.fillStyle = BLUE
-      ctx.font = '700 40px Inter, system-ui, sans-serif'
-      ctx.fillText(`${p.value}${valueSuffix}`, x + slotW / 2, baseY - 40)
-    } else {
-      ctx.fillStyle = MUTED
-      ctx.font = '500 28px Inter, system-ui, sans-serif'
-      ctx.fillText('—', x + slotW / 2, baseY - barH + 150)
-    }
-  })
-
-  footer(ctx)
-  return c
-}
-
 export interface ReviewRow {
   label: string
   name: string
   value: string
 }
 
-/** Year review: headline stats for the calendar year. */
-export function drawYearReview(year: number, rows: ReviewRow[]): HTMLCanvasElement {
-  const { c, ctx } = newCanvas()
-  header(ctx, `Rückblick ${year}`, 'Die Saison in Zahlen')
-
-  let y = 360
+function drawRows(ctx: CanvasRenderingContext2D, rows: ReviewRow[], startY = 360) {
+  let y = startY
   const x = 90
   const rowW = W - 180
   for (const r of rows) {
     ctx.fillStyle = CARD
-    roundRect(ctx, x, y, rowW, 118, 20)
+    roundRect(ctx, x, y, rowW, 150, 20)
     ctx.fill()
     ctx.strokeStyle = LINE
     ctx.lineWidth = 2
-    roundRect(ctx, x, y, rowW, 118, 20)
+    roundRect(ctx, x, y, rowW, 150, 20)
     ctx.stroke()
 
     ctx.textAlign = 'left'
     ctx.fillStyle = MUTED
-    ctx.font = '600 24px Inter, system-ui, sans-serif'
-    ctx.fillText(r.label.toUpperCase(), x + 32, y + 42)
+    ctx.font = '600 26px Inter, system-ui, sans-serif'
+    ctx.fillText(r.label.toUpperCase(), x + 36, y + 46)
 
     ctx.fillStyle = TEXT
-    ctx.font = '700 40px Inter, system-ui, sans-serif'
-    ctx.fillText(clip(ctx, r.name, rowW - 320), x + 32, y + 88)
+    ctx.font = '700 46px Inter, system-ui, sans-serif'
+    ctx.fillText(clip(ctx, r.name, rowW - 340), x + 36, y + 104)
 
     ctx.textAlign = 'right'
     ctx.fillStyle = BLUE
-    ctx.font = '800 44px Inter, system-ui, sans-serif'
-    ctx.fillText(r.value, x + rowW - 32, y + 76)
+    ctx.font = '800 50px Inter, system-ui, sans-serif'
+    ctx.fillText(r.value, x + rowW - 36, y + 88)
 
-    y += 138
+    y += 172
   }
+}
 
+/** Evening highlights: the 3 stand-out performances of one evening. */
+export function drawEveningHighlights(dateLabel: string, rows: ReviewRow[]): HTMLCanvasElement {
+  const { c, ctx } = newCanvas()
+  header(ctx, 'Abend-Highlights', dateLabel)
+  drawRows(ctx, rows, 380)
+  footer(ctx)
+  return c
+}
+
+/** Year review: headline stats for the calendar year. */
+export function drawYearReview(year: number, rows: ReviewRow[]): HTMLCanvasElement {
+  const { c, ctx } = newCanvas()
+  header(ctx, `Rückblick ${year}`, 'Die Saison in Zahlen')
+  drawRows(ctx, rows, 360)
   footer(ctx)
   return c
 }
