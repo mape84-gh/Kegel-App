@@ -220,7 +220,9 @@ export default function Abende() {
                 Fertig
               </button>
             </div>
-            <div className="modal-section-label">Podium des Abends</div>
+            <div className="modal-section-label">
+              Podium des Abends · nach Meisterschaftspunkten
+            </div>
             {podiumTop3.length === 0 ? (
               <div className="verlauf-empty">Für diesen Abend wurden keine Punkte erfasst</div>
             ) : (
@@ -231,6 +233,7 @@ export default function Abende() {
                     <div className="p-name">{p?.name ?? '—'}</div>
                     <div className="p-bar">
                       <div className="flip-number">{p ? p.value : ''}</div>
+                      <div style={{ fontSize: 10, color: 'var(--muted)' }}>{p ? 'Pkt' : ''}</div>
                     </div>
                   </div>
                 ))}

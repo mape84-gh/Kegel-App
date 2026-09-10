@@ -69,6 +69,16 @@ export interface VerlaufRow {
   created_at: string
 }
 
+export interface ClubTransaction {
+  id: string
+  datum: string
+  bezeichnung: string
+  einnahmen: number
+  ausgaben: number
+  created_by: string | null
+  created_at: string
+}
+
 export interface AppSettings {
   id: boolean
   paypalme_handle: string | null

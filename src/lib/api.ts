@@ -5,6 +5,7 @@ import type {
   Attendance,
   ChampionshipPoint,
   ClubEvening,
+  ClubTransaction,
   EveningCosts,
   Member,
   Penalty,
@@ -310,23 +311,55 @@ export function useConfirmPayment() {
   })
 }
 
-export function useBookMitgliedsgebuehr() {
+export function useClubTransactions() {
+  return useQuery({
+    queryKey: ['club_transactions'],
+    queryFn: () =>
+      must<ClubTransaction[]>(
+        supabase.from('club_transactions').select('*').order('datum', { ascending: false }),
+      ),
+  })
+}
+
+export function useAddClubTransaction() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { betrag: number }) => {
+    mutationFn: (input: {
+      datum: string
+      bezeichnung: string
+      einnahmen: number
+      ausgaben: number
+      created_by: string | null
+    }) => must(supabase.from('club_transactions').insert(input)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['club_transactions'] }),
+  })
+}
+
+export function useBookBeitrag() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      label: string
+      betrag: number
+      memberIds: string[]
+      alsMitgliedsbeitrag: boolean
+    }) => {
       const datum = new Date().toISOString().slice(0, 10)
-      const members = await must<Member[]>(supabase.from('members').select('id'))
-      await must(
-        supabase
-          .from('mitgliedsgebuehren')
-          .insert(members.map((m) => ({ datum, betrag: input.betrag, member_id: m.id }))),
-      )
+      const ids = input.memberIds
+      if (!ids.length) throw new Error('Keine Mitglieder ausgewählt')
+      if (input.alsMitgliedsbeitrag) {
+        await must(
+          supabase
+            .from('mitgliedsgebuehren')
+            .insert(ids.map((id) => ({ datum, betrag: input.betrag, member_id: id }))),
+        )
+      }
       await must(
         supabase.from('verlauf').insert(
-          members.map((m) => ({
-            member_id: m.id,
+          ids.map((id) => ({
+            member_id: id,
             datum,
-            label: 'Mitgliedsbeitrag',
+            label: input.label,
             betrag: input.betrag,
             typ: 'beitrag' as const,
           })),

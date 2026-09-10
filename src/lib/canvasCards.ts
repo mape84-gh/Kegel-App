@@ -77,10 +77,11 @@ export interface PodiumPerson {
 export function drawEveningPodium(
   dateLabel: string,
   top3: PodiumPerson[],
+  criterion = 'nach Meisterschaftspunkten des Abends',
   valueSuffix = ' Pkt',
 ): HTMLCanvasElement {
   const { c, ctx } = newCanvas()
-  header(ctx, 'Abend-Podium', dateLabel)
+  header(ctx, 'Abend-Podium', `${dateLabel}  ·  ${criterion}`)
 
   const order = [top3[1], top3[0], top3[2]] // silver, gold, bronze
   const colors = [SILVER, GOLD, BRONZE]
