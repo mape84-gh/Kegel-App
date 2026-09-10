@@ -1,8 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+type Mode = 'magic' | 'password'
+
 export default function Login() {
+  const [mode, setMode] = useState<Mode>('password')
+  const [isSignup, setIsSignup] = useState(false)
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [sent, setSent] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -11,13 +16,29 @@ export default function Login() {
     e.preventDefault()
     setErr(null)
     setBusy(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
-    })
-    setBusy(false)
-    if (error) setErr(error.message)
-    else setSent(true)
+    try {
+      if (mode === 'magic') {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email.trim(),
+          options: { emailRedirectTo: window.location.origin },
+        })
+        if (error) throw error
+        setSent(true)
+      } else if (isSignup) {
+        const { error } = await supabase.auth.signUp({ email: email.trim(), password })
+        if (error) throw error
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        })
+        if (error) throw error
+      }
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -29,9 +50,7 @@ export default function Login() {
 
       {sent ? (
         <div className="center-note">
-          Wir haben dir einen Login-Link an <b>{email}</b> geschickt.
-          <br />
-          Öffne ihn auf diesem Gerät.
+          Login-Link an <b>{email}</b> geschickt. Öffne ihn auf diesem Gerät.
         </div>
       ) : (
         <form onSubmit={submit}>
@@ -46,9 +65,53 @@ export default function Login() {
               placeholder="name@example.com"
             />
           </div>
+
+          {mode === 'password' && (
+            <div className="field-row">
+              <label>Passwort</label>
+              <input
+                type="password"
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          )}
+
           {err && <div className="center-note danger">{err}</div>}
+
           <button className="cta" type="submit" disabled={busy}>
-            {busy ? 'Sende…' : 'Login-Link anfordern'}
+            {busy
+              ? 'Moment…'
+              : mode === 'magic'
+                ? 'Login-Link anfordern'
+                : isSignup
+                  ? 'Registrieren'
+                  : 'Anmelden'}
+          </button>
+
+          {mode === 'password' && (
+            <button
+              type="button"
+              className="text-btn"
+              style={{ display: 'block', margin: '4px auto' }}
+              onClick={() => setIsSignup((v) => !v)}
+            >
+              {isSignup ? 'Ich habe schon einen Account' : 'Neuen Account anlegen'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="text-btn"
+            style={{ display: 'block', margin: '4px auto', color: 'var(--muted)' }}
+            onClick={() => {
+              setMode((m) => (m === 'magic' ? 'password' : 'magic'))
+              setErr(null)
+            }}
+          >
+            {mode === 'magic' ? 'Stattdessen mit Passwort' : 'Stattdessen per E-Mail-Link'}
           </button>
         </form>
       )}

@@ -50,11 +50,8 @@ create policy staff_write_gebuehren   on mitgliedsgebuehren for all to authentic
 create policy staff_write_verlauf     on verlauf            for all to authenticated using (is_staff()) with check (is_staff());
 create policy staff_write_settings    on app_settings       for all to authenticated using (is_staff()) with check (is_staff());
 
--- roster: admin manages; a signed-in user may claim their own unclaimed member row
+-- roster: admin manages. Self-onboarding is handled by claim_member() in 0005.
 create policy admin_write_members     on members            for all to authenticated using (is_admin()) with check (is_admin());
-create policy self_claim_member       on members            for update to authenticated
-  using (user_id is null or user_id = auth.uid())
-  with check (user_id = auth.uid());
 
 revoke all on function auth_member_role() from anon;
 revoke all on function is_staff() from anon;

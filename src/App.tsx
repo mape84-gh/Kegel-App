@@ -4,6 +4,7 @@ import { useAuth } from './auth/AuthProvider'
 import { ToastProvider } from './components/Toast'
 import TabBar from './components/TabBar'
 import Login from './screens/Login'
+import MemberClaim from './screens/MemberClaim'
 import Home from './screens/Home'
 import Abende from './screens/Abende'
 import AbendErfassung from './screens/AbendErfassung'
@@ -31,17 +32,7 @@ export default function App() {
 
   if (!session) return <Login />
 
-  if (!member) {
-    return (
-      <div className="frame">
-        <div className="center-note">
-          Dein Account ist noch keinem Mitglied zugeordnet.
-          <br />
-          Bitte an einen Admin wenden.
-        </div>
-      </div>
-    )
-  }
+  if (!member) return <MemberClaim />
 
   return (
     <ToastProvider>
