@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useAllAttendance, useAllPenalties, useMembers, useVerlauf } from '../lib/api'
 import { fmtEuro, initials } from '../lib/format'
 
 type Period = 'kalenderjahr' | 'custom'
+type ListItem = { id: string; name: string; value: number; display: string }
 
 export default function Statistik() {
   const members = useMembers()
@@ -10,33 +11,38 @@ export default function Statistik() {
   const penalties = useAllPenalties()
   const attendance = useAllAttendance()
 
+  const currentYear = new Date().getFullYear()
   const [period, setPeriod] = useState<Period>('kalenderjahr')
-  const now = new Date()
-  const [from, setFrom] = useState(`${now.getFullYear()}-01-01`)
-  const [to, setTo] = useState(now.toISOString().slice(0, 10))
+  const [from, setFrom] = useState(`${currentYear}-01-01`)
+  const [to, setTo] = useState(new Date().toISOString().slice(0, 10))
 
   const range = useMemo(() => {
     if (period === 'kalenderjahr') {
-      return { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` }
+      return { from: `${currentYear}-01-01`, to: `${currentYear}-12-31` }
     }
     return { from, to }
-  }, [period, from, to, now])
+  }, [period, from, to, currentYear])
 
-  const inRange = (d?: string | null) => !!d && d >= range.from && d <= range.to
+  const inRange = useCallback(
+    (d?: string | null) => !!d && d >= range.from && d <= range.to,
+    [range],
+  )
 
   const byId = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m.name])),
     [members.data],
   )
 
-  function toList(acc: Record<string, number>, unit: string) {
-    return Object.entries(acc)
-      .map(([id, value]) => ({ id, name: byId.get(id) ?? '?', value }))
-      .filter((x) => x.value > 0)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10)
-      .map((x) => ({ ...x, display: unit === '€' ? `${fmtEuro(x.value)} €` : String(x.value) }))
-  }
+  const toList = useCallback(
+    (acc: Record<string, number>, unit: string): ListItem[] =>
+      Object.entries(acc)
+        .map(([id, value]) => ({ id, name: byId.get(id) ?? '?', value }))
+        .filter((x) => x.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+        .map((x) => ({ ...x, display: unit === '€' ? `${fmtEuro(x.value)} €` : String(x.value) })),
+    [byId],
+  )
 
   const strafen = useMemo(() => {
     const acc: Record<string, number> = {}
@@ -47,7 +53,7 @@ export default function Statistik() {
       }
     }
     return toList(acc, '€')
-  }, [verlauf.data, range])
+  }, [verlauf.data, inRange, toList])
 
   const pudel = useMemo(() => {
     const acc: Record<string, number> = {}
@@ -58,7 +64,7 @@ export default function Statistik() {
       acc[p.member_id] = (acc[p.member_id] ?? 0) + p.anzahl
     }
     return toList(acc, 'x')
-  }, [penalties.data, range])
+  }, [penalties.data, inRange, toList])
 
   const anwesend = useMemo(() => {
     const acc: Record<string, number> = {}
@@ -68,7 +74,7 @@ export default function Statistik() {
       if (a.anwesend) acc[a.member_id] = (acc[a.member_id] ?? 0) + 1
     }
     return toList(acc, 'x')
-  }, [attendance.data, range])
+  }, [attendance.data, inRange, toList])
 
   const fehl = useMemo(() => {
     const acc: Record<string, number> = {}
@@ -78,7 +84,7 @@ export default function Statistik() {
       if (!a.anwesend) acc[a.member_id] = (acc[a.member_id] ?? 0) + 1
     }
     return toList(acc, 'x')
-  }, [attendance.data, range])
+  }, [attendance.data, inRange, toList])
 
   const abendeInRange = useMemo(
     () =>
@@ -87,10 +93,10 @@ export default function Statistik() {
           set.add(a.evening_id)
         return set
       }, new Set<string>()).size,
-    [attendance.data, range],
+    [attendance.data, inRange],
   )
 
-  const blocks: { title: string; data: ReturnType<typeof toList> }[] = [
+  const blocks: { title: string; data: ListItem[] }[] = [
     { title: '💸 Meiste Strafen', data: strafen },
     { title: '🎳 Meiste Pudel', data: pudel },
     { title: '✅ Meiste Anwesenheiten', data: anwesend },

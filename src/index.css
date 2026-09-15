@@ -437,3 +437,104 @@ nav.tabbar {
 .text-btn { background:none; border:none; color: var(--amber); font-size: 14px; cursor:pointer; padding: 8px 16px; }
 .danger { color: var(--red) !important; }
 
+/* ---------- subtle depth (both breakpoints) ---------- */
+.card, .tile, .entry-card, .hero, .fin-hero, .mp-card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+}
+@media (prefers-color-scheme: light) {
+  .card, .tile, .entry-card, .hero, .fin-hero, .mp-card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+}
+
+/* ================= DESKTOP / WIDE BROWSER LAYOUT ================= */
+@media (min-width: 900px) {
+  html, body { background: var(--bg); }
+
+  .frame {
+    max-width: none;
+    display: flex;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-bottom: 0;
+    border: none;
+  }
+
+  .screen {
+    flex: 1;
+    min-width: 0;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 12px 56px;
+  }
+
+  /* bottom tab bar -> left sidebar */
+  nav.tabbar {
+    order: -1;
+    position: sticky;
+    top: 0; left: auto; right: auto; bottom: auto;
+    width: 240px; flex: 0 0 240px;
+    height: 100vh;
+    max-width: none; margin: 0;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 4px;
+    padding: 32px 14px;
+    border-top: none;
+    border-right: 1px solid var(--line);
+    background: var(--bg);
+    backdrop-filter: none;
+  }
+  .tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+  .tab svg { width: 20px; height: 20px; flex: 0 0 auto; }
+  .tab.active { background: var(--surface); }
+
+  footer.savebar {
+    left: 240px; right: 0;
+    max-width: none; margin: 0;
+    padding: 14px 32px;
+    justify-content: center;
+    gap: 40px;
+  }
+  footer.savebar .total { min-width: 160px; }
+
+  .modal-overlay, .confirm-overlay { max-width: none; }
+  .modal-sheet { max-width: 480px; margin: 0 auto; }
+  .confirm-card { max-width: 420px; margin: 0 auto; }
+
+  .club-header { padding-top: 8px; }
+
+  /* comfortable hover feedback on real pointers only */
+  @media (hover: hover) {
+    .card, .tile, .abend-card, .rueck-row {
+      transition: border-color .15s ease, transform .15s ease;
+    }
+    .card:hover, .tile:hover { border-color: var(--amber-dim); }
+    .rueck-row:hover, .verlauf-row:hover { background: var(--surface); }
+    .tab:hover:not(.active) { background: var(--surface2); }
+  }
+}
+
+@media (min-width: 1200px) {
+  .screen:not(.auth-screen) { max-width: 920px; }
+  .tile-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 900px) {
+  /* login / member-claim / loading: no sidebar, just a centered card */
+  .auth-screen {
+    max-width: 440px;
+    width: 100%;
+    margin: 64px auto;
+  }
+}
+

@@ -43,6 +43,7 @@ export default function Login() {
 
   return (
     <div className="frame">
+      <div className="screen auth-screen">
       <div className="club-header">
         <div className="club-logo-wrap">RS</div>
         <h1 className="club-title">Ratinger Skatschützen</h1>
@@ -115,6 +116,7 @@ export default function Login() {
           </button>
         </form>
       )}
+      </div>
     </div>
   )
 }

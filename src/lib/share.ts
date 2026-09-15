@@ -19,11 +19,18 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
+export type ShareOutcome = 'shared' | 'cancelled' | 'downloaded'
+
 /**
  * Share a canvas as a PNG. Uses the native share sheet where available
- * (mobile), otherwise triggers a download.
+ * (mobile – WhatsApp shows up there directly), otherwise triggers a download
+ * so it can be attached manually (e.g. in WhatsApp Web on desktop).
  */
-export async function shareCanvas(canvas: HTMLCanvasElement, filename: string, title?: string) {
+export async function shareCanvas(
+  canvas: HTMLCanvasElement,
+  filename: string,
+  title?: string,
+): Promise<ShareOutcome> {
   const blob = await canvasToBlob(canvas)
   const file = new File([blob], filename, { type: 'image/png' })
 
@@ -34,9 +41,10 @@ export async function shareCanvas(canvas: HTMLCanvasElement, filename: string, t
   if (nav.canShare?.({ files: [file] }) && nav.share) {
     try {
       await nav.share({ files: [file], title: title ?? filename })
-      return
-    } catch {
-      // user cancelled or share failed -> fall through to download
+      return 'shared'
+    } catch (e) {
+      if ((e as Error)?.name === 'AbortError') return 'cancelled'
+      // share failed for another reason -> fall through to download
     }
   }
 
@@ -48,4 +56,5 @@ export async function shareCanvas(canvas: HTMLCanvasElement, filename: string, t
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 2000)
+  return 'downloaded'
 }

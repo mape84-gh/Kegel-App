@@ -37,6 +37,7 @@ export default function MemberClaim() {
 
   return (
     <div className="frame">
+      <div className="screen auth-screen">
       <div className="club-header">
         <div className="club-logo-wrap">RS</div>
         <h1 className="club-title">Wer bist du?</h1>
@@ -79,6 +80,7 @@ export default function MemberClaim() {
       >
         Abmelden
       </button>
+      </div>
     </div>
   )
 }

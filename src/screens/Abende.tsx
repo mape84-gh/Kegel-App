@@ -14,6 +14,7 @@ import { PREISE, type PenaltyKat } from '../lib/types'
 import { fmtEuro, fmtLongDE } from '../lib/format'
 import { drawEveningHighlights, type ReviewRow } from '../lib/canvasCards'
 import { shareCanvas } from '../lib/share'
+import { useToast } from '../components/Toast'
 
 const STATUS_LABEL: Record<string, string> = {
   entwurf: 'Entwurf',
@@ -29,6 +30,7 @@ function addWeeks(iso: string, weeks: number): string {
 
 export default function Abende() {
   const nav = useNavigate()
+  const toast = useToast()
   const { isStaff, member } = useAuth()
   const evenings = useEvenings()
   const attendance = useAllAttendance()
@@ -274,7 +276,14 @@ export default function Abende() {
                   setSharing(true)
                   try {
                     const canvas = drawEveningHighlights(fmtLongDE(podiumEvening.datum), highlights)
-                    await shareCanvas(canvas, `abend-${podiumEvening.datum}.png`, 'Abend-Highlights')
+                    const outcome = await shareCanvas(
+                      canvas,
+                      `abend-${podiumEvening.datum}.png`,
+                      'Abend-Highlights',
+                    )
+                    if (outcome === 'downloaded') {
+                      toast('Bild gespeichert – jetzt z. B. in WhatsApp anhängen')
+                    }
                   } finally {
                     setSharing(false)
                   }

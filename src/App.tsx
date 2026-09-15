@@ -26,7 +26,9 @@ export default function App() {
   if (loading) {
     return (
       <div className="frame">
-        <div className="center-note">Lädt…</div>
+        <div className="screen auth-screen">
+          <div className="center-note">Lädt…</div>
+        </div>
       </div>
     )
   }

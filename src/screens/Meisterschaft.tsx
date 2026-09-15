@@ -122,7 +122,14 @@ export default function Meisterschaft() {
             }
             setSharing(true)
             try {
-              await shareCanvas(drawYearReview(year, rows), `rueckblick-${year}.png`, `Rückblick ${year}`)
+              const outcome = await shareCanvas(
+                drawYearReview(year, rows),
+                `rueckblick-${year}.png`,
+                `Rückblick ${year}`,
+              )
+              if (outcome === 'downloaded') {
+                toast('Bild gespeichert – jetzt z. B. in WhatsApp anhängen')
+              }
             } finally {
               setSharing(false)
             }
