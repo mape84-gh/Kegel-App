@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useAuth } from './auth/AuthProvider'
 import { ToastProvider } from './components/Toast'
 import TabBar from './components/TabBar'
@@ -8,16 +7,25 @@ import MemberClaim from './screens/MemberClaim'
 import Home from './screens/Home'
 import Abende from './screens/Abende'
 import AbendErfassung from './screens/AbendErfassung'
+import AbendDetail from './screens/AbendDetail'
 import Meisterschaft from './screens/Meisterschaft'
 import Statistik from './screens/Statistik'
 import Finanzen from './screens/Finanzen'
 import Einstellungen from './screens/Einstellungen'
 import Strafen from './screens/Strafen'
+import { useEvening } from './lib/api'
 
-function StaffOnly({ children }: { children: ReactNode }) {
+/** Released evenings are a read-only report for everyone; drafts are staff-only editing. */
+function AbendRoute() {
+  const { id } = useParams<{ id: string }>()
   const { isStaff } = useAuth()
-  if (!isStaff) return <Navigate to="/" replace />
-  return <>{children}</>
+  const detail = useEvening(id)
+
+  if (detail.isLoading) return <div className="center-note">Lädt…</div>
+  if (!detail.data) return <div className="center-note">Abend nicht gefunden</div>
+  if (detail.data.evening.status === 'freigegeben') return <AbendDetail />
+  if (!isStaff) return <Navigate to="/abende" replace />
+  return <AbendErfassung />
 }
 
 export default function App() {
@@ -44,14 +52,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/abende" element={<Abende />} />
-            <Route
-              path="/abende/:id"
-              element={
-                <StaffOnly>
-                  <AbendErfassung />
-                </StaffOnly>
-              }
-            />
+            <Route path="/abende/:id" element={<AbendRoute />} />
             <Route path="/meisterschaft" element={<Meisterschaft />} />
             <Route path="/statistik" element={<Statistik />} />
             <Route path="/finanzen" element={<Finanzen />} />

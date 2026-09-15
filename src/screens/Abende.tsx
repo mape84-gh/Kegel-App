@@ -3,18 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import {
   useAllAttendance,
-  useAllPenalties,
   useCreateEvening,
   useEvenings,
-  useMembers,
   useSettings,
   useVerlauf,
 } from '../lib/api'
-import { PREISE, type PenaltyKat } from '../lib/types'
 import { fmtEuro, fmtLongDE } from '../lib/format'
-import { drawEveningHighlights, type ReviewRow } from '../lib/canvasCards'
-import { shareCanvas } from '../lib/share'
-import { useToast } from '../components/Toast'
 
 const STATUS_LABEL: Record<string, string> = {
   entwurf: 'Entwurf',
@@ -30,18 +24,13 @@ function addWeeks(iso: string, weeks: number): string {
 
 export default function Abende() {
   const nav = useNavigate()
-  const toast = useToast()
   const { isStaff, member } = useAuth()
   const evenings = useEvenings()
   const attendance = useAllAttendance()
   const verlauf = useVerlauf()
-  const penalties = useAllPenalties()
-  const members = useMembers()
   const settings = useSettings()
   const create = useCreateEvening()
   const [year, setYear] = useState<number | 'alle'>(new Date().getFullYear())
-  const [podiumFor, setPodiumFor] = useState<string | null>(null)
-  const [sharing, setSharing] = useState(false)
 
   const years = useMemo(() => {
     const now = new Date().getFullYear()
@@ -75,7 +64,7 @@ export default function Abende() {
     return acc
   }, [verlauf.data])
 
-  // --- recurring date suggestion (open point #5) ---
+  // --- recurring date suggestion ---
   const rhythmus = settings.data?.termin_rhythmus_wochen ?? 4
   const today = new Date().toISOString().slice(0, 10)
   const hasFuture = (evenings.data ?? []).some((e) => e.datum >= today)
@@ -95,44 +84,6 @@ export default function Abende() {
     const ev = await create.mutateAsync({ datum, ersteller_id: member?.id ?? null })
     nav(`/abende/${ev.id}`)
   }
-
-  const podiumEvening = (evenings.data ?? []).find((e) => e.id === podiumFor)
-
-  // "Abend-Highlights": most pudel / most penalties / fewest penalties (present only)
-  const highlights = useMemo<ReviewRow[]>(() => {
-    if (!podiumFor) return []
-    const byId = new Map((members.data ?? []).map((m) => [m.id, m.name]))
-    const present = new Set(
-      (attendance.data ?? [])
-        .filter((a) => a.evening_id === podiumFor && a.anwesend)
-        .map((a) => a.member_id),
-    )
-    const pudel: Record<string, number> = {}
-    const strafe: Record<string, number> = {}
-    for (const id of present) {
-      pudel[id] = 0
-      strafe[id] = 0
-    }
-    for (const p of penalties.data ?? []) {
-      if (p.evening_id !== podiumFor || !present.has(p.member_id)) continue
-      strafe[p.member_id] += p.anzahl * PREISE[p.kategorie as PenaltyKat]
-      if (p.kategorie === 'pudel') pudel[p.member_id] += p.anzahl
-    }
-    const ids = [...present]
-    if (!ids.length) return []
-    const maxBy = (acc: Record<string, number>) =>
-      ids.reduce((best, id) => (acc[id] > acc[best] ? id : best), ids[0])
-    const minBy = (acc: Record<string, number>) =>
-      ids.reduce((best, id) => (acc[id] < acc[best] ? id : best), ids[0])
-    const pk = maxBy(pudel)
-    const ms = maxBy(strafe)
-    const ws = minBy(strafe)
-    return [
-      { label: 'Meiste Pudel', name: byId.get(pk) ?? '?', value: `${pudel[pk]} Pudel` },
-      { label: 'Meiste Strafen', name: byId.get(ms) ?? '?', value: `${fmtEuro(strafe[ms])} €` },
-      { label: 'Wenigste Strafen', name: byId.get(ws) ?? '?', value: `${fmtEuro(strafe[ws])} €` },
-    ]
-  }, [podiumFor, penalties.data, attendance.data, members.data])
 
   return (
     <>
@@ -205,17 +156,13 @@ export default function Abende() {
         )}
         {list.map((e) => {
           const released = e.status === 'freigegeben'
-          const onClick = released
-            ? () => setPodiumFor(e.id)
-            : isStaff
-              ? () => nav(`/abende/${e.id}`)
-              : undefined
+          const clickable = released || isStaff
           return (
             <div
               key={e.id}
               className="card abend-card"
-              onClick={onClick}
-              style={{ cursor: onClick ? 'pointer' : 'default' }}
+              onClick={clickable ? () => nav(`/abende/${e.id}`) : undefined}
+              style={{ cursor: clickable ? 'pointer' : 'default' }}
             >
               <div className="abend-left">
                 <div className="d1">
@@ -240,61 +187,6 @@ export default function Abende() {
           )
         })}
       </div>
-
-      {podiumFor && podiumEvening && (
-        <div className="modal-overlay" onClick={() => setPodiumFor(null)}>
-          <div className="modal-sheet" onClick={(ev) => ev.stopPropagation()}>
-            <div className="modal-top">
-              <span className="modal-name">{fmtLongDE(podiumEvening.datum)}</span>
-              <button className="modal-close" onClick={() => setPodiumFor(null)}>
-                Fertig
-              </button>
-            </div>
-            <div className="modal-section-label">Abend-Highlights</div>
-            {highlights.length === 0 ? (
-              <div className="verlauf-empty">Für diesen Abend liegen keine Werte vor</div>
-            ) : (
-              highlights.map((h) => (
-                <div className="verlauf-row" key={h.label}>
-                  <div className="verlauf-left">
-                    <div className="vl-date">{h.label}</div>
-                    <div className="vl-label" style={{ fontSize: 16, fontWeight: 600 }}>
-                      {h.name}
-                    </div>
-                  </div>
-                  <div className="verlauf-amt num" style={{ color: 'var(--amber)', fontSize: 16 }}>
-                    {h.value}
-                  </div>
-                </div>
-              ))
-            )}
-            <div className="modal-pay">
-              <button
-                style={{ flex: 1 }}
-                disabled={sharing || highlights.length === 0}
-                onClick={async () => {
-                  setSharing(true)
-                  try {
-                    const canvas = drawEveningHighlights(fmtLongDE(podiumEvening.datum), highlights)
-                    const outcome = await shareCanvas(
-                      canvas,
-                      `abend-${podiumEvening.datum}.png`,
-                      'Abend-Highlights',
-                    )
-                    if (outcome === 'downloaded') {
-                      toast('Bild gespeichert – jetzt z. B. in WhatsApp anhängen')
-                    }
-                  } finally {
-                    setSharing(false)
-                  }
-                }}
-              >
-                {sharing ? 'Erzeuge Bild…' : 'Als Bild teilen'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
